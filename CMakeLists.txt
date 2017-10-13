@@ -111,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES bpeer_status_monitor
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf
 #  DEPENDS system_lib
 )
 
