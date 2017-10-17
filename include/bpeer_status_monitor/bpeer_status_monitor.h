@@ -50,7 +50,14 @@ private:
 	char amcl_exe[128];
 	bool bAmcl_status;
 
-	char returnForCharging_exe[128];
+	char returnCharging_exe[128];
+	bool bReturnCharging_status;
+
+	char identifyCharging_exe[128];
+	bool bIdentifyCharging_status;
+
+	char autoMapping_exe[128];
+	bool bAutoMapping_status;
 };
 
 
