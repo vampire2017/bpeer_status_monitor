@@ -21,7 +21,7 @@ StatusMonitor::StatusMonitor()
 
 	//precess: amcl
 	memset( amcl_exe, 0, sizeof(amcl_exe) );
-	char exe_name_amcl[] = "amcl  ";  //进程名
+	char exe_name_amcl[] = "sudden_localization  ";  //进程名
 	sprintf( amcl_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_amcl );  //指令集
 
 }

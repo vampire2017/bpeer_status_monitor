@@ -49,6 +49,8 @@ private:
 
 	char amcl_exe[128];
 	bool bAmcl_status;
+
+	char returnForCharging_exe[128];
 };
 
 
