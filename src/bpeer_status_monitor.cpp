@@ -6,7 +6,7 @@
 
 StatusMonitor::StatusMonitor()
 {
-	freq = 10;
+	freq = 1;
 	bLaser_alive = false;
 	mLaser_current_stamp.sec = 0;
 
@@ -156,10 +156,6 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	statusReport.time = ros::Time::now();
 	statusReport.module = "Q";
 	statusReport.type = 4;
-	statusReport.data = "{\"stat\" : "
-	                  + std::to_string( mnStatus )
-					  + "}";
-	statusReport_pub_.publish( statusReport );
 
 	// pub -> status
 	bprobot::msg_Q_status_monitor statusMonitorPub;
@@ -201,6 +197,13 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	// clear this status
 	bLaser_alive = false;
 	bOdom_alive = false;
+
+	if ( !statusMonitorPub.laser_alive || !mbPlanner_status || !mbTf2Topic_status )
+		mnStatus = 4;
+	statusReport.data = "{\"stat\" : "
+	                    + std::to_string( mnStatus )
+	                    + "}";
+	statusReport_pub_.publish( statusReport );
 }
 
 void StatusMonitor::monitor_process_alive()
