@@ -26,12 +26,12 @@ StatusMonitor::StatusMonitor()
 
 	//precess: 回冲
 	memset( returnCharging_exe, 0, sizeof(returnCharging_exe) );
-	char exe_name_returnCharging[] = "charging   ";  //进程名
+	char exe_name_returnCharging[] = "charging ";  //进程名
 	sprintf( returnCharging_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_returnCharging );  //指令集
 
-	//precess: 充电桩识别
+	//precess: 充电桩识别 @todo 充电桩识别的名字需要修改下
 	memset( identifyCharging_exe, 0, sizeof(identifyCharging_exe) );
-	char exe_name_identifyCharging[] = "auto_charging   ";  //进程名
+	char exe_name_identifyCharging[] = "auto_charging ";  //进程名
 	sprintf( identifyCharging_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_identifyCharging );  //指令集
 
 	//precess: 自主建图
@@ -39,6 +39,10 @@ StatusMonitor::StatusMonitor()
 	char exe_name_autoMapping[] = "auto_mapping  ";  //进程名
 	sprintf( autoMapping_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_autoMapping );  //指令集
 
+	//precess: tf2topic
+	memset( tf2topic_exe, 0, sizeof(tf2topic_exe) );
+	char exe_name_tf2topic[] = "pubTf2Topic ";  //进程名
+	sprintf( tf2topic_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_tf2topic );  //指令集
 
 }
 
@@ -106,7 +110,7 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	statusMonitorPub.process_returnCharging = bReturnCharging_status;
 	statusMonitorPub.process_identifyCharging = bIdentifyCharging_status;
 	statusMonitorPub.process_autoMapping = bAutoMapping_status;
-
+	statusMonitorPub.process_pubTf2Topic = bTf2Topic_status;
 	status_Q_pub_.publish( statusMonitorPub );
 
 	//clear this status
@@ -122,6 +126,7 @@ void StatusMonitor::monitor_process_alive()
 	bReturnCharging_status = process_is_ok( returnCharging_exe );
 	bIdentifyCharging_status = process_is_ok( identifyCharging_exe );
 	bAutoMapping_status = process_is_ok( autoMapping_exe );
+	bTf2Topic_status = process_is_ok( tf2topic_exe );
 }
 
 bool StatusMonitor::process_is_ok(const char *node)

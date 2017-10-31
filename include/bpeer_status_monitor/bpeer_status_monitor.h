@@ -58,6 +58,9 @@ private:
 
 	char autoMapping_exe[128];
 	bool bAutoMapping_status;
+
+	char tf2topic_exe[128];
+	bool bTf2Topic_status;
 };
 
 
