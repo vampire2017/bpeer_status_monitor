@@ -8,10 +8,12 @@
 #include <iostream>
 #include "ros/ros.h"
 #include <bprobot/msg_Q_status_monitor.h>
+#include <bprobot/msg_A_STATUS_REPORT.h>
 #include <sensor_msgs/LaserScan.h>
 #include <nav_msgs/Odometry.h>
 #include <string.h>
 #include <signal.h>
+#include <std_msgs/Int8.h>
 
 using namespace std;
 
@@ -45,22 +47,31 @@ private:
 
 	//process status
 	char planner_exe[128];  //进程名
-	bool bPlanner_status;  //进程状态
+	bool mbPlanner_status;  //进程状态
 
 	char amcl_exe[128];
-	bool bAmcl_status;
+	bool mbAmcl_status;
 
 	char returnCharging_exe[128];
-	bool bReturnCharging_status;
+	bool mbReturnCharging_status;
 
 	char identifyCharging_exe[128];
-	bool bIdentifyCharging_status;
+	bool mbIdentifyCharging_status;
 
 	char autoMapping_exe[128];
-	bool bAutoMapping_status;
+	bool mbAutoMapping_status;
 
 	char tf2topic_exe[128];
-	bool bTf2Topic_status;
+	bool mbTf2Topic_status;
+
+	//系统模块状态量
+	int mnStatus;
+	ros::Publisher statusReport_pub_;
+
+	ros::Subscriber autoCreateMap_sub_;
+	ros::Subscriber autoCharge_sub_;
+	ros::Subscriber localization_sub_;
+
 };
 
 

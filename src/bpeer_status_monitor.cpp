@@ -13,6 +13,8 @@ StatusMonitor::StatusMonitor()
 	bOdom_alive = false;
 	mOdom_current_stamp.sec = 0;
 
+	mnStatus = 0;   //default 0 : 正常定位
+
 	///init process
 	//process: planner
 	memset( planner_exe, 0, sizeof(planner_exe) );
@@ -69,6 +71,79 @@ void StatusMonitor::status_process()
 								cout << "live time: " << mOdom_current_stamp << " s" << endl;
 								cout << "alive: " << bOdom_alive << endl;   //test
 							} );
+	/**
+	 * @brief:   0->正常定位中(扫地等); 1->地图构建中; 2->重定位中; 3->回充中; 4->模块异常.
+	 * @brief1: -1->建图失败;  0->开始建图;  1->建图中;  2->建图完成.
+	 * @brief2: -1->回充失败;  0->回充开始;  1->回充中;  2->回充完成.
+	 * @brief3: -2->重定位失败; -1->定位失败; 0->定位正常; 1->重定位开始; 2->重定位中; 3->重定位完成.
+	 * @param mnStatus
+	 */
+	autoCreateMap_sub_ = nh_.subscribe< std_msgs::Int8 >( "/Q_auto_create_map", 2,
+		[this](const std_msgs::Int8ConstPtr& msg){
+			switch ( msg->data )
+			{
+				case -1:
+					mnStatus = 4;
+					break;
+				case 0:
+					mnStatus = 1;
+					break;
+				case 1:
+					mnStatus = 1;
+					break;
+				case 2:
+					mnStatus = 0;
+				default: break;
+			}
+		});
+
+	autoCharge_sub_ = nh_.subscribe< std_msgs::Int8 >( "/Q_auto_charge", 2,
+		[this](const std_msgs::Int8ConstPtr& msg){
+			switch ( msg->data )
+			{
+				case -1:
+					mnStatus = 4;
+					break;
+				case 0:
+					mnStatus = 3;
+					break;
+				case 1:
+					mnStatus = 3;
+					break;
+				case 2:
+					mnStatus = 0;
+					break;
+				default: break;
+			}
+		});
+
+	localization_sub_ = nh_.subscribe< std_msgs::Int8 >( "/Q_localization", 2,
+		[this](const std_msgs::Int8ConstPtr& msg){
+			switch ( msg->data )
+			{
+				case -2:
+					mnStatus = 4;
+					break;
+				case -1:
+					mnStatus = 4;
+					break;
+				case 0:
+					mnStatus = 0;
+					break;
+				case 1:
+					mnStatus = 2;
+					break;
+				case 2:
+					mnStatus = 2;
+					break;
+				case 3:
+					mnStatus = 0;
+					break;
+				default: break;
+			}
+		});
+
+	statusReport_pub_ =nh_.advertise< bprobot::msg_A_STATUS_REPORT >( "/A_STATUS_REPORT", 1 );
 
 	timer_ = nh_private.createTimer( ros::Duration(1.0/freq), &StatusMonitor::process_receiveDataSpin, this );
 
@@ -76,8 +151,18 @@ void StatusMonitor::status_process()
 
 void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 {
-	bprobot::msg_Q_status_monitor statusMonitorPub;
+	// pub report -> monitor status
+	bprobot::msg_A_STATUS_REPORT statusReport;
+	statusReport.time = ros::Time::now();
+	statusReport.module = "Q";
+	statusReport.type = 4;
+	statusReport.data = "{\"stat\" : "
+	                  + std::to_string( mnStatus )
+					  + "}";
+	statusReport_pub_.publish( statusReport );
 
+	// pub -> status
+	bprobot::msg_Q_status_monitor statusMonitorPub;
 	statusMonitorPub.stamp = ros::Time::now();
 	statusMonitorPub.laser_data = bLaser_alive;  //true: 有数据  false:无数据
 	statusMonitorPub.odom_data = bOdom_alive;
@@ -105,28 +190,27 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	///process
 	monitor_process_alive();
 
-	statusMonitorPub.process_planner = bPlanner_status;
-	statusMonitorPub.process_amcl = bAmcl_status;
-	statusMonitorPub.process_returnCharging = bReturnCharging_status;
-	statusMonitorPub.process_identifyCharging = bIdentifyCharging_status;
-	statusMonitorPub.process_autoMapping = bAutoMapping_status;
-	statusMonitorPub.process_pubTf2Topic = bTf2Topic_status;
+	statusMonitorPub.process_planner = mbPlanner_status;
+	statusMonitorPub.process_amcl = mbAmcl_status;
+	statusMonitorPub.process_returnCharging = mbReturnCharging_status;
+	statusMonitorPub.process_identifyCharging = mbIdentifyCharging_status;
+	statusMonitorPub.process_autoMapping = mbAutoMapping_status;
+	statusMonitorPub.process_pubTf2Topic = mbTf2Topic_status;
 	status_Q_pub_.publish( statusMonitorPub );
 
-	//clear this status
+	// clear this status
 	bLaser_alive = false;
 	bOdom_alive = false;
-
 }
 
 void StatusMonitor::monitor_process_alive()
 {
-	bPlanner_status = process_is_ok( planner_exe );
-	bAmcl_status = process_is_ok( amcl_exe );
-	bReturnCharging_status = process_is_ok( returnCharging_exe );
-	bIdentifyCharging_status = process_is_ok( identifyCharging_exe );
-	bAutoMapping_status = process_is_ok( autoMapping_exe );
-	bTf2Topic_status = process_is_ok( tf2topic_exe );
+	mbPlanner_status = process_is_ok( planner_exe );
+	mbAmcl_status = process_is_ok( amcl_exe );
+	mbReturnCharging_status = process_is_ok( returnCharging_exe );
+	mbIdentifyCharging_status = process_is_ok( identifyCharging_exe );
+	mbAutoMapping_status = process_is_ok( autoMapping_exe );
+	mbTf2Topic_status = process_is_ok( tf2topic_exe );
 }
 
 bool StatusMonitor::process_is_ok(const char *node)
