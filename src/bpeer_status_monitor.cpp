@@ -250,7 +250,7 @@ bool StatusMonitor::process_is_ok(const char *node)
 //		cout << " good **** " <<  endl;
 		status_ret = true;
 	}
-	fclose( mProcess );
+	pclose( mProcess );
 
 	return status_ret;
 }
