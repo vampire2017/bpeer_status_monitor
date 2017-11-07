@@ -29,8 +29,13 @@ public:
 
 private:
 	void process_receiveDataSpin( const ros::TimerEvent& e );
-	ros::Timer timer_;
-	int freq;
+	void process_reportStatusSpin( const ros::TimerEvent& e );
+
+	ros::Timer timer1_;
+	ros::Timer timer2_;
+
+	int freq1;
+	int freq2;
 
 	ros::NodeHandle nh_;
 

@@ -6,7 +6,8 @@
 
 StatusMonitor::StatusMonitor()
 {
-	freq = 1;
+	freq1 = 10;  // status
+	freq2 = 1;  // report
 	bLaser_alive = false;
 	mLaser_current_stamp.sec = 0;
 
@@ -23,17 +24,17 @@ StatusMonitor::StatusMonitor()
 
 	//precess: amcl cov
 	memset( amcl_exe, 0, sizeof(amcl_exe) );
-	char exe_name_amcl[] = "sudden_localization  ";  //进程名
+	char exe_name_amcl[] = "amcl  ";  //进程名
 	sprintf( amcl_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_amcl );  //指令集
 
 	//precess: 回冲
 	memset( returnCharging_exe, 0, sizeof(returnCharging_exe) );
-	char exe_name_returnCharging[] = "charging ";  //进程名
+	char exe_name_returnCharging[] = "auto_charging ";  //进程名
 	sprintf( returnCharging_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_returnCharging );  //指令集
 
 	//precess: 充电桩识别 @todo 充电桩识别的名字需要修改下
 	memset( identifyCharging_exe, 0, sizeof(identifyCharging_exe) );
-	char exe_name_identifyCharging[] = "auto_charging ";  //进程名
+	char exe_name_identifyCharging[] = "identify_charging ";  //进程名
 	sprintf( identifyCharging_exe, "ps -ef | grep %s | grep -v grep | wc -l ", exe_name_identifyCharging );  //指令集
 
 	//precess: 自主建图
@@ -56,20 +57,20 @@ void StatusMonitor::status_process()
 
 	laser_sub_ = nh_.subscribe< sensor_msgs::LaserScan >( "/scan", 2,
 	                            [this](const sensor_msgs::LaserScanConstPtr& laser_data){
-		                            cout << "laser in.. " << endl;
+//		                            cout << "laser in.. " << endl;
 		                            bLaser_alive = laser_data->header.seq;
 		                            mLaser_current_stamp = laser_data->header.stamp;
-		                            cout << "live time: " << mLaser_current_stamp << " s" << endl;
-		                            cout << "alive: " << bLaser_alive << endl;  //test
+//		                            cout << "live time: " << mLaser_current_stamp << " s" << endl;
+//		                            cout << "alive: " << bLaser_alive << endl;  //test
 	                            } );
 
 	odom_sub_ = nh_.subscribe< nav_msgs::Odometry >( "/odom", 2,
 							[this](const nav_msgs::OdometryConstPtr& odom_data){
-								cout << "odom in.. " << endl;
+//								cout << "odom in.. " << endl;
 								mOdom_current_stamp = odom_data->header.stamp;
 								bOdom_alive = odom_data->header.seq;
-								cout << "live time: " << mOdom_current_stamp << " s" << endl;
-								cout << "alive: " << bOdom_alive << endl;   //test
+//								cout << "live time: " << mOdom_current_stamp << " s" << endl;
+//								cout << "alive: " << bOdom_alive << endl;   //test
 							} );
 	/**
 	 * @brief:   0->正常定位中(扫地等); 1->地图构建中; 2->重定位中; 3->回充中; 4->模块异常.
@@ -145,18 +146,31 @@ void StatusMonitor::status_process()
 
 	statusReport_pub_ =nh_.advertise< bprobot::msg_A_STATUS_REPORT >( "/A_STATUS_REPORT", 1 );
 
-	timer_ = nh_private.createTimer( ros::Duration(1.0/freq), &StatusMonitor::process_receiveDataSpin, this );
+	timer1_ = nh_private.createTimer( ros::Duration(1.0/freq1), &StatusMonitor::process_receiveDataSpin, this );
+	timer2_ = nh_private.createTimer( ros::Duration(1.0/freq2), &StatusMonitor::process_reportStatusSpin, this );
 
 }
 
-void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
+void StatusMonitor::process_reportStatusSpin(const ros::TimerEvent &e)
 {
-	// pub report -> monitor status
+	ROS_INFO("living time...");
+
 	bprobot::msg_A_STATUS_REPORT statusReport;
 	statusReport.time = ros::Time::now();
 	statusReport.module = "Q";
 	statusReport.type = 4;
 
+	// 模块异常report
+	if ( !mbPlanner_status || !mbTf2Topic_status )
+		mnStatus = 4;
+	statusReport.data = "{\"stat\" : "
+	                    + std::to_string( mnStatus )
+	                    + "}";
+	statusReport_pub_.publish( statusReport );
+}
+
+void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
+{
 	// pub -> status
 	bprobot::msg_Q_status_monitor statusMonitorPub;
 	statusMonitorPub.stamp = ros::Time::now();
@@ -197,13 +211,6 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	// clear this status
 	bLaser_alive = false;
 	bOdom_alive = false;
-
-	if ( !statusMonitorPub.laser_alive || !mbPlanner_status || !mbTf2Topic_status )
-		mnStatus = 4;
-	statusReport.data = "{\"stat\" : "
-	                    + std::to_string( mnStatus )
-	                    + "}";
-	statusReport_pub_.publish( statusReport );
 }
 
 void StatusMonitor::monitor_process_alive()
@@ -220,7 +227,7 @@ bool StatusMonitor::process_is_ok(const char *node)
 {
 	bool status_ret = false;
 
-	cout << " process: " << node << endl;
+//	cout << " process: " << node << endl;
 
 	FILE *mProcess = popen( node, "r" );
 	if ( mProcess == NULL )
@@ -231,16 +238,16 @@ bool StatusMonitor::process_is_ok(const char *node)
 	fgets( buff, 512, mProcess );
 	int flag = atoi( buff );
 
-	cout << "test:..  " << flag<< endl;
+//	cout << "test:..  " << flag<< endl;
 
 	if( !flag  )
 	{
-		cout << " --failed-- " << endl;
+//		cout << " --failed-- " << endl;
 		status_ret = false;
 	}
 	else
 	{
-		cout << " good **** " <<  endl;
+//		cout << " good **** " <<  endl;
 		status_ret = true;
 	}
 	fclose( mProcess );
