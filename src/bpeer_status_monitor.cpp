@@ -162,7 +162,7 @@ void StatusMonitor::process_reportStatusSpin(const ros::TimerEvent &e)
 
 	// 模块异常report
 	// TODO planner amcl IdentifyCharging_status tf2topic --> always alive;
-	if ( !mbPlanner_status || !mbAmcl_status || !mbIdentifyCharging_status || !mbTf2Topic_status )
+	if ( !mbPlanner_status || !mbAmcl_status || !mbReturnCharging_status || !mbIdentifyCharging_status )
 		mnStatus = 4;
 	statusReport.data = "{\"stat\" : "
 	                    + std::to_string( mnStatus )
