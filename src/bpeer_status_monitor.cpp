@@ -6,8 +6,8 @@
 
 StatusMonitor::StatusMonitor()
 {
-	freq1 = 10;  // status
-	freq2 = 1;  // report
+	freq1 = 1;  // status 1hz
+	freq2 = 30;  // report 30s
 	bLaser_alive = false;
 	mLaser_current_stamp.sec = 0;
 
@@ -147,7 +147,7 @@ void StatusMonitor::status_process()
 	statusReport_pub_ =nh_.advertise< bprobot::msg_A_STATUS_REPORT >( "/A_STATUS_REPORT", 1 );
 
 	timer1_ = nh_private.createTimer( ros::Duration(1.0/freq1), &StatusMonitor::process_receiveDataSpin, this );
-	timer2_ = nh_private.createTimer( ros::Duration(1.0/freq2), &StatusMonitor::process_reportStatusSpin, this );
+	timer2_ = nh_private.createTimer( ros::Duration(freq2), &StatusMonitor::process_reportStatusSpin, this );
 
 }
 
