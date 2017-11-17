@@ -6,7 +6,7 @@
 
 StatusMonitor::StatusMonitor()
 {
-	freq1 = 1;  // status 1hz
+	freq1 = 5;  // status 5s
 	freq2 = 30;  // report 30s
 	bLaser_alive = false;
 	mLaser_current_stamp.sec = 0;
@@ -146,7 +146,7 @@ void StatusMonitor::status_process()
 
 	statusReport_pub_ =nh_.advertise< bprobot::msg_A_STATUS_REPORT >( "/A_STATUS_REPORT", 1 );
 
-	timer1_ = nh_private.createTimer( ros::Duration(1.0/freq1), &StatusMonitor::process_receiveDataSpin, this );
+	timer1_ = nh_private.createTimer( ros::Duration(freq1), &StatusMonitor::process_receiveDataSpin, this );
 	timer2_ = nh_private.createTimer( ros::Duration(freq2), &StatusMonitor::process_reportStatusSpin, this );
 
 }
@@ -222,17 +222,22 @@ void StatusMonitor::monitor_process_alive()
 	mbIdentifyCharging_status = process_is_ok( identifyCharging_exe );
 	mbAutoMapping_status = process_is_ok( autoMapping_exe );
 	mbTf2Topic_status = process_is_ok( tf2topic_exe );
+	std::cout<< "------------" << std::endl;
 }
 
 bool StatusMonitor::process_is_ok(const char *node)
 {
+	int rc = 0;
 	bool status_ret = false;
 
 //	cout << " process: " << node << endl;
 
 	FILE *mProcess = popen( node, "r" );
-	if ( mProcess == NULL )
+	if (  NULL == mProcess )
+	{
+		std::cout<< "popen执行失败！: " << std::endl;
 		return false;
+	}
 
 	char buff[512];
 	memset( buff, 0, sizeof(buff) );
@@ -251,7 +256,16 @@ bool StatusMonitor::process_is_ok(const char *node)
 //		cout << " good **** " <<  endl;
 		status_ret = true;
 	}
-	pclose( mProcess );
+	rc = pclose( mProcess );
+	if( -1 == rc )
+	{
+		std::cout<< "关闭文件指针失败！: " << std::endl;
+		return false;
+	}
+	else
+	{
+		std::cout<< "命令结束: " << node << std::endl;
+	}
 
 	return status_ret;
 }
