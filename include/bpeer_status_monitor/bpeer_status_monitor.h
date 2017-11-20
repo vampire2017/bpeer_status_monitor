@@ -15,6 +15,15 @@
 #include <signal.h>
 #include <std_msgs/Int8.h>
 
+#include <log4cplus/logger.h>
+#include <log4cplus/fileappender.h>
+#include <log4cplus/consoleappender.h>
+#include <log4cplus/layout.h>
+#include <loggingmacros.h>
+
+using namespace log4cplus;
+using namespace log4cplus::helpers;
+
 using namespace std;
 
 class StatusMonitor
@@ -30,6 +39,7 @@ public:
 private:
 	void process_receiveDataSpin( const ros::TimerEvent& e );
 	void process_reportStatusSpin( const ros::TimerEvent& e );
+	void judge_status_output_log( const bool laser_alive_, const bool odom_alive_ );
 
 	ros::Timer timer1_;
 	ros::Timer timer2_;
@@ -76,6 +86,9 @@ private:
 	ros::Subscriber autoCreateMap_sub_;
 	ros::Subscriber autoCharge_sub_;
 	ros::Subscriber localization_sub_;
+
+	SharedAppenderPtr _append;
+	Logger _logger;
 
 };
 
