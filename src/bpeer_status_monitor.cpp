@@ -4,8 +4,16 @@
  */
 #include <bpeer_status_monitor/bpeer_status_monitor.h>
 
-StatusMonitor::StatusMonitor()
+StatusMonitor::StatusMonitor():
+		_append(new FileAppender("/home/bpeer/Desktop/test.log"))
 {
+	_append->setName("file log test");
+	_logger = Logger::getInstance("/home/bpeer/Desktop/test");
+	_logger.addAppender(_append);
+
+	//	std::string pattern = "%d{%m/%d/%y %H:%M:%S}  - %m [%l]%n";
+//	std::auto_ptr _layout(new PatternLayout(pattern));
+
 	freq1 = 5;  // status 5s
 	freq2 = 30;  // report 30s
 	bLaser_alive = false;
@@ -178,7 +186,7 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	statusMonitorPub.laser_data = bLaser_alive;  //true: 有数据  false:无数据
 	statusMonitorPub.odom_data = bOdom_alive;
 
-//	cout << "laser time: " << statusMonitorPub.stamp.toSec() << endl;
+	//	cout << "laser time: " << statusMonitorPub.stamp.toSec() << endl;
 //	cout << "mLaser_current_stamp: " << mLaser_current_stamp.toSec() << endl;
 
 	///sensor
@@ -201,6 +209,9 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	///process
 	monitor_process_alive();
 
+	bool laser_alive = statusMonitorPub.laser_alive;
+	bool odom_alive = statusMonitorPub.odom_alive;
+
 	statusMonitorPub.process_planner = mbPlanner_status;
 	statusMonitorPub.process_amcl = mbAmcl_status;
 	statusMonitorPub.process_returnCharging = mbReturnCharging_status;
@@ -209,18 +220,54 @@ void StatusMonitor::process_receiveDataSpin(const ros::TimerEvent &e)
 	statusMonitorPub.process_pubTf2Topic = mbTf2Topic_status;
 	status_Q_pub_.publish( statusMonitorPub );
 
+	LOG4CPLUS_DEBUG(_logger, "{ time:" << ros::Time::now() <<
+	                                   "; laser:" << laser_alive <<
+	                                   "; odom:" << odom_alive <<
+	                                   "; planner:" << mbPlanner_status <<
+	                                   "; amcl:" << mbAmcl_status <<
+	                                   "; returnCharging:" << mbReturnCharging_status <<
+	                                   "; identifyCharging:" << mbIdentifyCharging_status <<
+	                                   "; autoMapping:" << mbAutoMapping_status <<
+	                                   "; pubTf2Topic:" << mbTf2Topic_status << " }");
+	judge_status_output_log( laser_alive, odom_alive );
+
 	// clear this status
 	bLaser_alive = false;
 	bOdom_alive = false;
 }
 
+void StatusMonitor::judge_status_output_log(const bool laser_alive_, const bool odom_alive_)
+{
+	if ( 0 == laser_alive_ )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => laser failed");
+	if ( 0 == odom_alive_ )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => odom failed");
+	if ( 0 == mbPlanner_status )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => planner failed");
+	if ( 0 == mbAmcl_status )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => amcl failed");
+	if ( 0 == mbReturnCharging_status )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => ReturnCharging failed");
+	if ( 0 == mbIdentifyCharging_status )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => IdentifyCharging failed");
+	if ( 0 == mbAutoMapping_status )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => AutoMapping failed");
+	if ( 0 == mbTf2Topic_status )
+		LOG4CPLUS_WARN(_logger, "time:" << ros::Time::now() << " => Tf2Topic failed");
+}
+
 void StatusMonitor::monitor_process_alive()
 {
 	mbPlanner_status = process_is_ok( planner_exe );
+	usleep( 1000 );
 	mbAmcl_status = process_is_ok( amcl_exe );
+	usleep( 1000 );
 	mbReturnCharging_status = process_is_ok( returnCharging_exe );
+	usleep( 1000 );
 	mbIdentifyCharging_status = process_is_ok( identifyCharging_exe );
+	usleep( 1000 );
 	mbAutoMapping_status = process_is_ok( autoMapping_exe );
+	usleep( 1000 );
 	mbTf2Topic_status = process_is_ok( tf2topic_exe );
 	std::cout<< "------------" << std::endl;
 }

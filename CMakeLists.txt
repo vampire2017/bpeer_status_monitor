@@ -19,6 +19,9 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
+include_directories(/usr/local/include/log4cplus)
+set( LOG4CPLUS_LIBS "/usr/local/lib/liblog4cplus.so" )
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -154,6 +157,7 @@ include_directories(
 ## Specify libraries to link a library or executable target against
  target_link_libraries(bpeer_status_monitor_node
    ${catkin_LIBRARIES}
+         ${LOG4CPLUS_LIBS}
  )
 
 #############
