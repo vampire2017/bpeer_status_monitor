@@ -14,6 +14,7 @@
 #include <string.h>
 #include <signal.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/Bool.h>
 
 #include <log4cplus/logger.h>
 #include <log4cplus/fileappender.h>
@@ -39,17 +40,22 @@ public:
 private:
 	void process_receiveDataSpin( const ros::TimerEvent& e );
 	void process_reportStatusSpin( const ros::TimerEvent& e );
+	void process_reportLocalizationStatusSpin( const ros::TimerEvent& e );
+
 	void judge_status_output_log( const bool laser_alive_, const bool odom_alive_ );
 
 	ros::Timer timer1_;
 	ros::Timer timer2_;
+	ros::Timer timer3_;
 
 	int freq1;
 	int freq2;
+	int freq3;
 
 	ros::NodeHandle nh_;
 
 	ros::Publisher status_Q_pub_;
+	ros::Publisher status_Q_loc_pub_;
 
 	//sensor status
 	ros::Subscriber laser_sub_;

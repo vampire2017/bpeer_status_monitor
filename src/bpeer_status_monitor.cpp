@@ -16,6 +16,8 @@ StatusMonitor::StatusMonitor():
 
 	freq1 = 5;  // status 5s
 	freq2 = 30;  // report 30s
+	freq3 = 10;  // report localization status
+
 	bLaser_alive = false;
 	mLaser_current_stamp.sec = 0;
 
@@ -61,8 +63,12 @@ void StatusMonitor::status_process()
 {
 	ros::NodeHandle nh_private("~");
 
+	// pub
 	status_Q_pub_ = nh_.advertise< bprobot::msg_Q_status_monitor >( "/Q_monitor_status", 1 );
+	statusReport_pub_ =nh_.advertise< bprobot::msg_A_STATUS_REPORT >( "/A_STATUS_REPORT", 1 );
+	status_Q_loc_pub_ = nh_.advertise<std_msgs::Bool>( "Q_localization_status", 1 );
 
+	// sub
 	laser_sub_ = nh_.subscribe< sensor_msgs::LaserScan >( "/scan", 2,
 	                            [this](const sensor_msgs::LaserScanConstPtr& laser_data){
 //		                            cout << "laser in.. " << endl;
@@ -126,6 +132,7 @@ void StatusMonitor::status_process()
 			}
 		});
 
+	/*
 	localization_sub_ = nh_.subscribe< std_msgs::Int8 >( "/Q_localization", 2,
 		[this](const std_msgs::Int8ConstPtr& msg){
 			switch ( msg->data )
@@ -151,12 +158,25 @@ void StatusMonitor::status_process()
 				default: break;
 			}
 		});
-
-	statusReport_pub_ =nh_.advertise< bprobot::msg_A_STATUS_REPORT >( "/A_STATUS_REPORT", 1 );
+	 */
 
 	timer1_ = nh_private.createTimer( ros::Duration(freq1), &StatusMonitor::process_receiveDataSpin, this );
 	timer2_ = nh_private.createTimer( ros::Duration(freq2), &StatusMonitor::process_reportStatusSpin, this );
+	timer3_ = nh_private.createTimer( ros::Duration(1.0/freq3), &StatusMonitor::process_reportLocalizationStatusSpin, this );
+}
 
+void StatusMonitor::process_reportLocalizationStatusSpin(const ros::TimerEvent &e)
+{
+	std_msgs::Bool locaStatusReport;
+
+	// 0.5s 内没有输数据
+	if ( bOdom_alive && bLaser_alive )
+		locaStatusReport.data = true;
+	else if ( ros::Time::now().toSec() - mOdom_current_stamp.toSec() > 0.5 ||
+	          ros::Time::now().toSec() - mLaser_current_stamp.toSec() > 0.5 )
+		locaStatusReport.data = false;
+
+	status_Q_loc_pub_.publish( locaStatusReport );
 }
 
 void StatusMonitor::process_reportStatusSpin(const ros::TimerEvent &e)
